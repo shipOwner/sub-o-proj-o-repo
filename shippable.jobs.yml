@@ -1,0 +1,61 @@
+jobs:
+  - name: dv-man
+    type: manifest
+    steps:
+      - IN: runImageIn
+        pull: false
+      - IN: opts
+      - IN: params
+        applyTo:
+          - runImageIn
+      - TASK: managed
+      - IN: trigger
+    on_success:
+      - script: echo 'this is on_success step of dv-man of type manifest'
+    on_failure:
+      - script: echo 'this is on_failure step of dv-man of type manifest'
+    flags:
+      - manifest
+      
+  - name: spaceBar1
+    type: runSh
+    steps:
+      - IN: runImageIn
+      - IN: sample-script
+      - OUT: runImageOut
+      - TASK:
+        - script: sudo apt-get install tree
+        - script: IN/sample-script/gitRepo/echo.sh
+        - pwd
+        
+  - name: runSh
+    type: runSh
+    steps:
+      - IN: runImageOut
+      - IN: spaceBar1
+      - IN: sample-script-dup
+      - TASK:
+        - script: sudo apt-get install tree
+        - pwd
+
+  - name: runSh2
+    type: runSh
+    steps:
+      - IN: spaceBar1
+      - IN: runSh
+      - TASK:
+        - pwd
+        
+  - name: deploy-test
+    type: deploy
+    on_start:
+      - NOTIFY: slackNotification
+    steps:
+      - IN: dv-man
+      - IN: env
+      - TASK: managed
+        deployMethod: upgrade
+    on_success:
+      - NOTIFY: slackNotification
+    on_failure:
+      - NOTIFY: slackNotification
